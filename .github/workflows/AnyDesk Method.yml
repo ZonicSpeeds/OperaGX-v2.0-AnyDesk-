@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 250
     env:
-      ANYDESK_PASS: 1
+      ANYDESK_PASS: P1
       RUNTIME_MINUTES: 260
 
     steps:

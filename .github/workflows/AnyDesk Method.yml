@@ -26,7 +26,7 @@ jobs:
           $publicDesktop = [Environment]::GetFolderPath("CommonDesktopDirectory")
           $userDesktop = "$env:USERPROFILE\Desktop"
           
-          $targets = @("Unity Hub.lnk", "R 4.6.0.lnk", "Firefox.lnk", "Google Chrome.lnk", "Claim Rewards Here.lnk")
+          $targets = @("Unity Hub.lnk", "R 4.6.0.lnk", "Google Chrome.lnk", "Claim Rewards Here.lnk")
           foreach ($target in $targets) {
               if (Test-Path "$publicDesktop\$target") { Remove-Item "$publicDesktop\$target" -Force -ErrorAction SilentlyContinue }
               if (Test-Path "$userDesktop\$target") { Remove-Item "$userDesktop\$target" -Force -ErrorAction SilentlyContinue }
@@ -173,84 +173,6 @@ jobs:
           Start-Process -FilePath $operaExe -ArgumentList $stealthArgs
           Write-Host "Sequence finished. Workspace deployed smoothly with a single Urban VPN extension window active."
           Start-Sleep -Seconds 10
-
-      - name: Fetch and Display AnyDesk Connection Address
-        run: |
-          $confPath = "C:\ProgramData\AnyDesk\system.conf"
-          $cleanId = ""
-          
-          for ($i = 1; $i -le 10; $i++) {
-              if (Test-Path $confPath) {
-                  $content = Get-Content $confPath -Raw
-                  if ($content -match 'ad\.anynet\.id=(\d+)') {
-                      $cleanId = $Matches[1]
-                      break
-                  }
-              }
-              Start-Sleep -Seconds 4
-          }
-          
-          $ESC = [char]27
-          $Green = "$ESC[32m"
-          $Yellow = "$ESC[33m"
-          $Red = "$ESC[31m"
-          $Reset = "$ESC[0m"
-          
-          Write-Host "${Green}====================================================${Reset}"
-          Write-Host "${Green}        ANYDESK CLOUD MACHINE IS READY TO CONNECT     ${Reset}"
-          Write-Host "${Green}====================================================${Reset}"
-          Write-Host "${Yellow} CONNECTION ID : ${Red}${cleanId}${Reset}"
-          Write-Host "${Yellow} PASSWORD      : ${Red}${{ env.ANYDESK_PASS }}${Reset}"
-          Write-Host "${Green}====================================================${Reset}"
-
-      - name: Keep alive
-        run: |
-          $mins = [int]"${{ env.RUNTIME_MINUTES }}"
-          $end = (Get-Date).AddMinutes($mins)
-          while ((Get-Date) -lt $end) {
-            Write-Host ("Cloud PC Heartbeat " + (Get-Date).ToString("HH:mm:ss") + " | Active until " + $end.ToString("HH:mm:ss"))
-            Start-Sleep -Seconds 60
-          }          $url = "https://download.anydesk.com/AnyDesk.exe"
-          $dst = "$env:TEMP\AnyDesk.exe"
-          Invoke-WebRequest -Uri $url -OutFile $dst
-          
-          $installDir = "C:\Program Files (x86)\AnyDesk"
-          if (-not (Test-Path $installDir)) { New-Item -ItemType Directory -Path $installDir -Force | Out-Null }
-
-          Start-Process $dst -ArgumentList "--install `"$installDir`"", "--silent", "--start-with-win" -Wait
-          Remove-Item $dst -ErrorAction SilentlyContinue
-
-      - name: Configure Unattended Access Password & Force Enable Touch Injection
-        run: |
-          $ad = "C:\Program Files (x86)\AnyDesk\AnyDesk.exe"
-          if (-not (Test-Path $ad)) { $ad = "C:\Program Files\AnyDesk\AnyDesk.exe" }
-          
-          cmd.exe /c "echo ${{ env.ANYDESK_PASS }} | `"$ad`" --set-password"
-          
-          # Force Windows to allow UI Automation and Touch Injection over RDP layers
-          New-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableUIADesktopToggle" -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue
-          
-          # Unblock Touch Remote/Tablet Mode restrictions in Remote Desktop Services
-          $tsPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations"
-          New-ItemProperty -Path $tsPath -Name "TouchMode" -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue
-          New-ItemProperty -Path $tsPath -Name "EnableTouchInjection" -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue
-          
-          $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-          Set-ItemProperty -Path $path -Name "TaskbarGlomLevel" -Value 0 -ErrorAction SilentlyContinue
-          
-          Start-Process -FilePath $ad -ArgumentList "--restart-service" -Wait
-
-      - name: Minimize Running Infrastructure Windows
-        run: |
-          Write-Host "Sending active command prompt windows to the taskbar tray..."
-          $shell = New-Object -ComObject Shell.Application
-          $shell.MinimizeAll()
-
-      - name: Optimize Resolution for Mobile Display
-        run: |
-          Write-Host "Forcing resolution calibration matrix..."
-          Set-DisplayResolution -Width 1600 -Height 1200 -Force -ErrorAction SilentlyContinue
-
 
       - name: Fetch and Display AnyDesk Connection Address
         run: |
